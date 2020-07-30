@@ -7,6 +7,7 @@ import Markdown from '../markdown'
 import Emoji, {Props as EmojiProps} from '../emoji'
 import {emojiIndexByName} from './emoji-gen'
 import ServiceDecoration from './service-decoration'
+import 'highlight.js/styles/vs.css'
 
 const wrapStyle = Styles.platformStyles({
   isElectron: {
@@ -271,6 +272,35 @@ const reactComponentsForMarkdownType = {
         </Text>
       ),
   },
+  codeFence: {
+    react: (
+      node: SimpleMarkdown.SingleASTNode,
+      _output: SimpleMarkdown.ReactOutput,
+      state: SimpleMarkdown.State
+    ) =>
+      Styles.isMobile ? (
+        <Box key={state.key} style={markdownStyles.codeSnippetBlockTextStyle}>
+          <Text
+            type="Body"
+            style={Styles.collapseStyles([
+              markdownStyles.codeSnippetBlockTextStyle,
+              state.styleOverride.fence,
+            ])}
+            allowFontScaling={state.allowFontScaling}
+          >
+            <div dangerouslySetInnerHTML={{__html: node.content}} />
+          </Text>
+        </Box>
+      ) : (
+        <Text
+          key={state.key}
+          type="Body"
+          style={Styles.collapseStyles([markdownStyles.codeSnippetBlockStyle, state.styleOverride.fence])}
+        >
+          <div dangerouslySetInnerHTML={{__html: node.content}} />
+        </Text>
+      ),
+  },
   inlineCode: {
     react: (
       node: SimpleMarkdown.SingleASTNode,
@@ -374,7 +404,7 @@ const passthroughForMarkdownType = Object.keys(reactComponentsForMarkdownType).r
         state: SimpleMarkdown.State
       ) =>
         typeof node.content !== 'object'
-          ? SimpleMarkdown.defaultRules.text.react({content: node.content, type: 'text'}, output, state)
+          ? SimpleMarkdown.defaultRules.text.react({content: node.unformattedContent /* <- Used only in codeFence format type */ || node.content, type: 'text'}, output, state)
           : output(node.content, state),
     }
   }

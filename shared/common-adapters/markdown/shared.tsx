@@ -1,11 +1,13 @@
 import * as Styles from '../../styles'
 import React, {PureComponent} from 'react'
 import SimpleMarkdown from 'simple-markdown'
+import hljs from 'highlight.js';
 import Text from '../text'
 import logger from '../../logger'
 import {Props as MarkdownProps} from '.'
 import {emojiIndexByChar, emojiRegex, commonTlds} from './emoji-gen'
 import {reactOutput, previewOutput, bigEmojiOutput, markdownStyles, serviceOnlyOutput} from './react'
+import {supportedCodeLanguages} from './supported-code-languages'
 
 const serviceBeginDecorationTag = '\\$\\>kb\\$'
 const serviceEndDecorationTag = '\\$\\<kb\\$'
@@ -146,7 +148,8 @@ const rules: {[type: string]: SimpleMarkdown.ParserRule} = {
   fence: {
     // aka the ``` code blocks
     ...SimpleMarkdown.defaultRules.fence,
-    match: SimpleMarkdown.anyScopeRegex(/^```(?:\n)?((?:\\[\s\S]|[^\\])+?)```(?!`)(\n)?/),
+    //if you add any more languages please also add it to ./supported-code-languages.tsx
+    match: SimpleMarkdown.anyScopeRegex(/^``` ?(html.handlebars|livecodeserver|ruleslanguage|actionscript|coffeescript|angelscript|applescript|lassoscript|mathematica|mojolicious|python-repl|arduinoino|apacheconf|autohotkey|freepascal|dockerfile|handlebars|javascript|livescript|moonscript|objectivec|postgresql|powershell|processing|properties|typescript|accesslog|osascript|brainfuck|capnproto|nginxconf|plaintext|instances|smalltalk|stanfuncs|asciidoc|cmake.in|dsconfig|gololang|html.hbs|makefile|markdown|openscad|postgres|protobuf|reasonml|craftcms|vbscript|aspectj|clojure|crystal|lazarus|fortran|gherkin|haskell|inform7|mercury|oxygene|pf.conf|parser3|profile|gemspec|podspec|console|subunit|verilog|armasm|avrasm|apache|arcade|autoit|axapta|csharp|coffee|delphi|pascal|django|docker|elixir|erlang|fsharp|golang|gradle|groovy|hylang|irpf90|kotlin|mkdown|matlab|maxima|monkey|nimrod|prolog|puppet|python|scheme|scilab|stylus|thrift|x86asm|xquery|zephir|basic|cmake|capnp|crmsh|patch|jinja|excel|gcode|gauss|xhtml|plist|https|lasso|mizar|nginx|ocaml|obj-c|pgsql|pycon|graph|scala|shell|smali|stata|swift|vbnet|xpath|abnf|adoc|mawk|nawk|gawk|bash|cson|iced|pcmk|zone|bind|dart|diff|dust|ebnf|xlsx|gams|golo|html|atom|http|haml|haxe|toml|json|java|leaf|less|ldif|lisp|moon|n1ql|nsis|objc|glsl|scad|php3|php4|php5|php6|php7|perl|text|pony|ruby|thor|rust|scss|step|stan|styl|twig|vhdl|vala|yaml|ada|arm|asc|awk|zsh|bnf|cpp|hpp|c\+\+|h\+\+|cxx|hxx|cal|cos|cls|coq|csp|css|clj|crm|dns|dos|bat|cmd|dpr|dfm|pas|lpr|lfm|dts|dst|elm|erl|xls|fix|f90|f95|gms|gss|xml|rss|xjb|xsd|xsl|svg|hbs|ini|jsp|jsx|tex|lua|mak|mkd|mma|mel|nix|php|txt|ps1|gyp|kdb|qml|rib|rsl|irb|SAS|sas|sql|p21|stp|sci|sml|tcl|tap|vbs|vim|tao|yml|zep|1c|as|sh|bf|cs|cc|hh|cr|fs|nc|go|hs|hx|hy|i7|js|kt|ls|mk|md|wl|ml|mm|pf|pl|pm|ps|pp|py|re|rb|rs|st|tk|tp|ts|vb|xl|xq|c|h|d|k|r|v)?(?:\n)?((?:\\[\s\S]|[^\\])+?)```(?!`)(\n)?/),
     // original:
     // match: SimpleMarkdown.blockRegex(/^ *(`{3,}|~{3,}) *(\S+)? *\n([\s\S]+?)\s*\1 *(?:\n *)+\n/),
     // ours: three ticks (anywhere) and remove any newlines in front and one in back
@@ -156,10 +159,16 @@ const rules: {[type: string]: SimpleMarkdown.ParserRule} = {
       _nestedParse: SimpleMarkdown.Parser,
       _state: SimpleMarkdown.State
     ) {
+
+      //check to see if this is trying to parse code
+      //const isProbablyCode = supportedCodeLanguages.includes(capture[0]);
+      console.log('ipc!', capture, capture[1], 'is supported -> ', );
+      const isSupportedLanguage = supportedCodeLanguages.indexOf(capture[1]) > -1;
       return {
-        content: capture[1],
+        content: isSupportedLanguage ? hljs.highlight(capture[1], capture[2]).value : capture[2],
+        unformattedContent: isSupportedLanguage ? capture[2] : undefined,
         lang: undefined,
-        type: 'fence',
+        type: isSupportedLanguage ? 'codeFence' : 'fence'
       }
     },
   },
